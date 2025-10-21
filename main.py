@@ -1,16 +1,17 @@
 """
 Sistema IA Posgrados UBA Derecho
-Version FINAL - Sin errores
+Backend minimalista
 """
 
 import os
 import asyncio
 import aiohttp
 from datetime import datetime, timedelta
+from pathlib import Path
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from openai import OpenAI
 import logging
@@ -37,7 +38,7 @@ async def scrape_uba():
     if scraping_cache["data"] and scraping_cache["timestamp"]:
         age = datetime.now() - scraping_cache["timestamp"]
         if age < timedelta(hours=scraping_cache["ttl_hours"]):
-            logger.info(f"Usando cache ({age.seconds//3600}h)")
+            logger.info(f"Usando cache")
             return scraping_cache["data"]
     
     logger.info("Iniciando scraping...")
@@ -57,10 +58,8 @@ async def scrape_uba():
                         texto = soup.get_text(separator='\n', strip=True)
                         lineas = [l.strip() for l in texto.split('\n') if l.strip()]
                         texto_limpio = '\n'.join(lineas)
-                        datos.append(f"=== {url} ===\n{texto_limpio[:8000]}")
+                        datos.append(texto_limpio[:8000])
                         logger.info(f"OK {url}")
-                    else:
-                        logger.warning(f"Status {response.status}: {url}")
             except Exception as e:
                 logger.error(f"Error {url}: {e}")
             await asyncio.sleep(1)
@@ -88,7 +87,7 @@ Instrucciones:
 - Si no sabes, di "No tengo esa informacion"
 - Se conciso y claro
 - Usa bullets cuando sea util
-- Se amable y profesional"""
+- Se amable"""
 
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -102,7 +101,7 @@ Instrucciones:
         return response.choices[0].message.content
     except Exception as e:
         logger.error(f"Error OpenAI: {e}")
-        return "Error al procesar tu pregunta. Intenta nuevamente."
+        return "Error al procesar tu pregunta."
 
 app = FastAPI(title="UBA Posgrados AI")
 
@@ -126,128 +125,12 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Error init: {e}")
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def home():
-    html = """<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Posgrados UBA Derecho</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.container{width:100%;max-width:900px;height:90vh;max-height:800px;background:#fff;border-radius:24px;box-shadow:0 25px 50px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden}
-.header{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:24px;text-align:center}
-.header h1{font-size:24px;font-weight:700;margin-bottom:8px}
-.header p{opacity:.9;font-size:14px}
-.messages{flex:1;overflow-y:auto;padding:24px;background:#f8f9fa;display:flex;flex-direction:column;gap:16px}
-.message{display:flex;gap:12px;animation:fadeIn .3s}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.message.user{flex-direction:row-reverse}
-.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-.message.bot .avatar{background:linear-gradient(135deg,#667eea,#764ba2)}
-.message.user .avatar{background:linear-gradient(135deg,#11998e,#38ef7d)}
-.bubble{max-width:70%;padding:14px 18px;border-radius:18px;line-height:1.5;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-.message.bot .bubble{background:#fff;border:1px solid #e0e0e0;color:#333}
-.message.user .bubble{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
-.suggestions{padding:16px 24px;background:#fff;border-top:1px solid #e0e0e0;display:flex;gap:8px;overflow-x:auto;flex-wrap:wrap}
-.suggestion-btn{padding:8px 16px;background:#f0f0f0;border:1px solid #ddd;border-radius:20px;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap}
-.suggestion-btn:hover{background:#667eea;color:#fff;border-color:#667eea}
-.loading{display:none;text-align:center;padding:12px;color:#667eea;font-style:italic}
-.input-area{padding:20px 24px;background:#fff;border-top:2px solid #e0e0e0;display:flex;gap:12px;align-items:center}
-#userInput{flex:1;padding:12px 20px;border:2px solid #e0e0e0;border-radius:24px;font-size:15px;outline:none;transition:border-color .2s}
-#userInput:focus{border-color:#667eea}
-#sendBtn{padding:12px 28px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:24px;font-weight:600;cursor:pointer;transition:transform .2s;font-size:15px}
-#sendBtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,.4)}
-#sendBtn:disabled{opacity:.6;cursor:not-allowed}
-@media (max-width:768px){
-.container{height:100vh;border-radius:0}
-.bubble{max-width:85%}
-.header h1{font-size:20px}
-}
-</style>
-</head>
-<body>
-<div class="container">
-<div class="header">
-<h1>🎓 Asistente de Posgrados UBA Derecho</h1>
-<p>Pregúntame sobre maestrías, especializaciones y doctorados</p>
-</div>
-<div class="messages" id="messages">
-<div class="message bot">
-<div class="avatar">🤖</div>
-<div class="bubble">¡Hola! Soy tu asistente virtual de posgrados UBA Derecho.<br><br>Puedo ayudarte con:<br>• Maestrías y especializaciones<br>• Requisitos de inscripción<br>• Directores y contactos<br>• Planes de estudio<br><br>¿En qué puedo ayudarte?</div>
-</div>
-</div>
-<div class="suggestions">
-<button class="suggestion-btn" onclick="sendSuggestion('Que maestrias hay disponibles')">📚 Maestrías</button>
-<button class="suggestion-btn" onclick="sendSuggestion('Que especializaciones ofrecen')">🎯 Especializaciones</button>
-<button class="suggestion-btn" onclick="sendSuggestion('Requisitos para el doctorado')">🎓 Doctorado</button>
-<button class="suggestion-btn" onclick="sendSuggestion('Como me inscribo')">✍️ Inscripción</button>
-</div>
-<div class="loading" id="loading">Pensando...</div>
-<div class="input-area">
-<input type="text" id="userInput" placeholder="Escribe tu pregunta aqui..." autocomplete="off"/>
-<button id="sendBtn">Enviar</button>
-</div>
-</div>
-<script>
-const m=document.getElementById('messages');
-const inp=document.getElementById('userInput');
-const btn=document.getElementById('sendBtn');
-const load=document.getElementById('loading');
-function addMsg(txt,isUser){
-const div=document.createElement('div');
-div.className='message '+(isUser?'user':'bot');
-const av=document.createElement('div');
-av.className='avatar';
-av.textContent=isUser?'👤':'🤖';
-const bub=document.createElement('div');
-bub.className='bubble';
-bub.innerHTML=txt.replace(/\\n/g,'<br>');
-div.appendChild(av);
-div.appendChild(bub);
-m.appendChild(div);
-m.scrollTop=m.scrollHeight;
-}
-async function send(){
-const q=inp.value.trim();
-if(!q)return;
-addMsg(q,true);
-inp.value='';
-btn.disabled=true;
-load.style.display='block';
-try{
-const r=await fetch('/q',{
-method:'POST',
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({pregunta:q})
-});
-const d=await r.json();
-if(r.ok){
-addMsg(d.respuesta,false);
-}else{
-addMsg('Error: '+(d.detail||'No se pudo procesar'),false);
-}
-}catch(e){
-addMsg('Error de conexion. Intenta nuevamente.',false);
-}finally{
-btn.disabled=false;
-load.style.display='none';
-}
-}
-function sendSuggestion(txt){
-inp.value=txt;
-send();
-}
-btn.onclick=send;
-inp.onkeypress=e=>{if(e.key==='Enter')send()};
-inp.focus();
-</script>
-</body>
-</html>"""
-    return html
+    index_path = Path(__file__).parent / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return {"error": "index.html no encontrado"}
 
 @app.post("/q")
 async def consultar(pregunta: Pregunta):
@@ -264,16 +147,7 @@ async def consultar(pregunta: Pregunta):
 
 @app.get("/health")
 async def health():
-    cache_age = None
-    if scraping_cache["timestamp"]:
-        age = datetime.now() - scraping_cache["timestamp"]
-        cache_age = f"{age.seconds//3600}h {(age.seconds%3600)//60}m"
-    return {
-        "status": "healthy",
-        "cache_size": len(scraping_cache["data"]),
-        "cache_age": cache_age,
-        "openai_configured": bool(API_KEY)
-    }
+    return {"status": "healthy"}
 
 if __name__ == "__main__":
     import uvicorn
