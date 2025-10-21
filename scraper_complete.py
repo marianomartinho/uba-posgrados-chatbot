@@ -357,11 +357,6 @@ async def scrape_todo():
     print(f"   Promedio materias/programa: {stats['total_materias'] / stats['total_programas']:.1f}")
 
 # ============== EJECUTAR ==============
-
-if __name__ == "__main__":
-    print("""
-    🎓 SCRAPER EXHAUSTIVO - POSGRADOS UBA DERECHO
-    ================================================
     
     Este script va a:
     ✅ Extraer 21 maestrías completas
