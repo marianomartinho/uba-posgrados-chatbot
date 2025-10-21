@@ -205,19 +205,16 @@ async def scrape_plan_estudios(session, nombre_corto):
         estructura['ciclos'] = [{'nombre': c[0], 'horas': int(c[1])} for c in match_ciclos]
     
     # Extraer materias
-    # Patrón: número + punto + nombre de materia (capitalizado)
     patron_materias = r'\d+\.\s+([A-ZÁ-Ú][^\n\r\.]+?)(?:\.|\n|\()'
     matches = re.findall(patron_materias, texto)
     
     for nombre_mat in matches:
         nombre_limpio = limpiar_texto(nombre_mat)
-        if len(nombre_limpio) > 5 and len(nombre_limpio) < 200:  # Filtrar ruido
-            # Buscar horas de la materia
+        if len(nombre_limpio) > 5 and len(nombre_limpio) < 200:
             patron_horas = rf'{re.escape(nombre_limpio)}[^\d]*(\d+)\s*horas?'
             match_horas = re.search(patron_horas, texto, re.IGNORECASE)
             horas = int(match_horas.group(1)) if match_horas else None
             
-            # Determinar tipo
             tipo_materia = 'optativa' if 'optativa' in texto.lower() else 'troncal'
             
             materias.append({
@@ -238,15 +235,12 @@ async def scrape_requisitos(session, nombre_corto):
     
     soup = BeautifulSoup(html, 'html.parser')
     
-    # Buscar listas de requisitos
     requisitos = []
     
-    # Buscar <li> o párrafos numerados
     items = soup.find_all('li')
     if items:
         requisitos = [limpiar_texto(li.get_text()) for li in items if len(li.get_text()) > 10]
     else:
-        # Buscar párrafos con numeración
         texto = soup.get_text()
         matches = re.findall(r'[•\-\d]+\.\s+([^\n]{20,200})', texto)
         requisitos = [limpiar_texto(m) for m in matches]
@@ -264,12 +258,10 @@ async def scrape_objetivos(session, nombre_corto):
     soup = BeautifulSoup(html, 'html.parser')
     texto = soup.get_text()
     
-    # Extraer párrafos con objetivos (típicamente después de "Objetivos:")
     match = re.search(r'Objetivos?[:\s]+(.{100,1000})', texto, re.IGNORECASE | re.DOTALL)
     if match:
         return limpiar_texto(match.group(1))
     
-    # Si no, tomar primer párrafo largo
     parrafos = [p for p in texto.split('\n') if len(p) > 100]
     return limpiar_texto(parrafos[0]) if parrafos else None
 
@@ -279,33 +271,27 @@ async def scrape_programa_completo(session, nombre_corto, tipo, db_session):
     """Scrape completo de un programa (5 páginas)"""
     print(f"📝 Scraping: {nombre_corto}...")
     
-    # 1. Página principal
     datos = await scrape_pagina_principal(session, nombre_corto, tipo)
     if not datos:
         print(f"   ⚠️  No se pudo obtener datos principales")
         return None
     
-    # 2. Plan de estudios
     materias, estructura = await scrape_plan_estudios(session, nombre_corto)
     if estructura:
         datos['estructura_ciclos'] = estructura
     
-    # 3. Requisitos
     requisitos = await scrape_requisitos(session, nombre_corto)
     if requisitos:
         datos['requisitos'] = requisitos
     
-    # 4. Objetivos
     objetivos = await scrape_objetivos(session, nombre_corto)
     if objetivos:
         datos['objetivos'] = objetivos
     
-    # Guardar en BD
     try:
         programa_id = agregar_programa(db_session, datos)
         print(f"   ✅ Programa guardado ID={programa_id}")
         
-        # Guardar materias
         for materia in materias:
             agregar_materia(db_session, programa_id, materia)
         
@@ -321,20 +307,17 @@ async def scrape_todo():
     print("🚀 INICIANDO SCRAPING EXHAUSTIVO")
     print("="*60)
     
-    # Inicializar BD
     engine, db_session = init_database()
     
     async with aiohttp.ClientSession() as session:
         
-        # MAESTRÍAS
         print(f"\n📚 MAESTRÍAS ({len(MAESTRIAS_LIST)} programas)")
         print("-"*60)
         
         for nombre in MAESTRIAS_LIST:
             await scrape_programa_completo(session, nombre, 'maestria', db_session)
-            await asyncio.sleep(0.5)  # Rate limiting
+            await asyncio.sleep(0.5)
         
-        # ESPECIALIZACIONES
         print(f"\n🎯 ESPECIALIZACIONES ({len(ESPECIALIZACIONES_LIST)} programas)")
         print("-"*60)
         
@@ -345,7 +328,6 @@ async def scrape_todo():
     print("\n" + "="*60)
     print("✅ SCRAPING COMPLETO")
     
-    # Mostrar estadísticas
     from database import get_stats
     stats = get_stats(db_session)
     
@@ -357,21 +339,8 @@ async def scrape_todo():
     print(f"   Promedio materias/programa: {stats['total_materias'] / stats['total_programas']:.1f}")
 
 # ============== EJECUTAR ==============
-    
-    Este script va a:
-    ✅ Extraer 21 maestrías completas
-    ✅ Extraer 26 especializaciones completas
-    ✅ Capturar ~1,400 materias
-    ✅ Obtener directores, coordinadores, emails
-    ✅ Extraer planes de estudio completos
-    ✅ Guardar requisitos de admisión
-    ✅ Almacenar todo en base de datos SQLite
-    
-    Duración estimada: 5-10 minutos
-    """)
-    
-    
+
+if __name__ == "__main__":
     asyncio.run(scrape_todo())
-    
     print("\n✅ Datos guardados en: posgrados_uba.db")
     print("🎉 ¡Listo para usar!")
