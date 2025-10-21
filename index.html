@@ -1,1 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posgrados UBA Derecho - Asistente IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-6 shadow-lg">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold">🎓 Posgrados UBA Derecho</h1>
+                        <p class="text-purple-100 mt-1">Asistente inteligente con IA</p>
+                    </div>
+                    <a href="/dashboard.html" class="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 font-medium transition">
+                        📊 Dashboard
+                    </a>
+                </div>
+            </div>
+        </header>
 
+        <!-- Main Content -->
+        <main class="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+            <!-- Chat Container -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden" style="height: 600px; display: flex; flex-direction: column;">
+                
+                <!-- Messages Area -->
+                <div id="messages" class="flex-1 p-6 overflow-y-auto space-y-4">
+                    <!-- Welcome Message -->
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                            <span class="text-xl">🤖</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="bg-purple-50 rounded-lg p-4">
+                                <p class="text-gray-800">¡Hola! Soy tu asistente para consultas sobre los posgrados de la Facultad de Derecho de la UBA.</p>
+                                <p class="text-gray-800 mt-2">Puedo ayudarte con información sobre maestrías, especializaciones, planes de estudio, requisitos y más.</p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Ahora</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggested Questions -->
+                <div id="suggestions" class="px-6 py-4 bg-gray-50 border-t">
+                    <p class="text-sm text-gray-600 mb-3 font-medium">Preguntas frecuentes:</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="enviarSugerencia('¿Qué maestrías hay disponibles?')" 
+                                class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-full text-sm hover:bg-purple-50 hover:border-purple-300 transition">
+                            ¿Qué maestrías hay?
+                        </button>
+                        <button onclick="enviarSugerencia('Requisitos maestría en derecho penal')" 
+                                class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-full text-sm hover:bg-purple-50 hover:border-purple-300 transition">
+                            Requisitos Derecho Penal
+                        </button>
+                        <button onclick="enviarSugerencia('¿Cuánto dura la maestría en derecho tributario?')" 
+                                class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-full text-sm hover:bg-purple-50 hover:border-purple-300 transition">
+                            Duración programas
+                        </button>
+                        <button onclick="enviarSugerencia('Especialización en derecho laboral')" 
+                                class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-full text-sm hover:bg-purple-50 hover:border-purple-300 transition">
+                            Especialización Laboral
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-4 bg-white border-t">
+                    <form id="chatForm" class="flex gap-2">
+                        <input 
+                            type="text" 
+                            id="preguntaInput" 
+                            placeholder="Escribe tu pregunta aquí..."
+                            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            autocomplete="off"
+                        >
+                        <button 
+                            type="submit" 
+                            id="enviarBtn"
+                            class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        >
+                            Enviar
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p>Sistema basado en datos oficiales de la Facultad de Derecho UBA</p>
+                <p class="mt-1">Para consultas oficiales: <a href="mailto:inscripcionesposgrado@derecho.uba.ar" class="text-purple-600 hover:underline">inscripcionesposgrado@derecho.uba.ar</a></p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const form = document.getElementById('chatForm');
+        const input = document.getElementById('preguntaInput');
+        const button = document.getElementById('enviarBtn');
+
+        function agregarMensaje(texto, esUsuario = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start gap-3';
+            
+            const tiempo = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+            
+            if (esUsuario) {
+                messageDiv.innerHTML = `
+                    <div class="flex-1 flex flex-col items-end">
+                        <div class="bg-purple-600 text-white rounded-lg p-4 max-w-xl">
+                            <p>${texto}</p>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">${tiempo}</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                        <span class="text-xl">👤</span>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <span class="text-xl">🤖</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-purple-50 rounded-lg p-4 max-w-xl">
+                            <p class="whitespace-pre-wrap">${texto}</p>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">${tiempo}</p>
+                    </div>
+                `;
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function mostrarEscribiendo() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'flex items-start gap-3';
+            typingDiv.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xl">🤖</span>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4">
+                    <div class="flex gap-1">
+                        <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    </div>
+                </div>
+            `;
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function ocultarEscribiendo() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        async function enviarPregunta(pregunta) {
+            if (!pregunta.trim()) return;
+
+            // Agregar mensaje del usuario
+            agregarMensaje(pregunta, true);
+            
+            // Limpiar input y deshabilitar
+            input.value = '';
+            input.disabled = true;
+            button.disabled = true;
+            button.textContent = 'Enviando...';
+
+            // Mostrar indicador de escritura
+            mostrarEscribiendo();
+
+            try {
+                const response = await fetch('/q', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ pregunta })
+                });
+
+                ocultarEscribiendo();
+
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+
+                const data = await response.json();
+                agregarMensaje(data.respuesta);
+
+            } catch (error) {
+                ocultarEscribiendo();
+                agregarMensaje('Lo siento, ocurrió un error al procesar tu pregunta. Por favor intenta nuevamente.');
+                console.error('Error:', error);
+            } finally {
+                input.disabled = false;
+                button.disabled = false;
+                button.textContent = 'Enviar';
+                input.focus();
+            }
+        }
+
+        function enviarSugerencia(pregunta) {
+            enviarPregunta(pregunta);
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pregunta = input.value;
+            enviarPregunta(pregunta);
+        });
+
+        // Focus en input al cargar
+        input.focus();
+    </script>
+</body>
+</html>
