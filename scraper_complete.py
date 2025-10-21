@@ -375,7 +375,6 @@ if __name__ == "__main__":
     Duración estimada: 5-10 minutos
     """)
     
-    input("Presioná ENTER para comenzar...")
     
     asyncio.run(scrape_todo())
     
