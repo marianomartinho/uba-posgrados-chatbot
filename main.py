@@ -1,6 +1,7 @@
 """
 🎓 Sistema IA Posgrados UBA Derecho
 Production-ready version for Railway deployment
+VERSIÓN CORREGIDA - Endpoint /q
 """
 
 import os
@@ -500,7 +501,7 @@ async def home():
             loading.style.display = 'block';
 
             try {
-                const response = await fetch('/consultar', {
+                const response = await fetch('/q', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -539,7 +540,7 @@ async def home():
 </body>
 </html>"""
 
-@app.post("/consultar")
+@app.post("/q")
 async def consultar(pregunta: Pregunta):
     """
     Endpoint principal para consultas
